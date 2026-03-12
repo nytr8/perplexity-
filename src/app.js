@@ -10,6 +10,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 // authentication endpoints
-app.use("/auth", authRouter);
+app.use("/api/auth", authRouter);
 
 export default app;
