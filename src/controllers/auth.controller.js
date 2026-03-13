@@ -1,6 +1,6 @@
 import User from "../models/user.js";
 import { sendEnmail } from "../services/mail.service.js";
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 export async function registerUser(req, res) {
   // validation middleware already ensured the required fields are present
@@ -79,6 +79,44 @@ export async function verifyEmail(req, res) {
       error: error.message,
     });
   }
+}
+export async function resendVerifyEmail(req, res) {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({
+      message: "user not found",
+    });
+  }
+  const isVerified = user.verified;
+  if (isVerified) {
+    return res.status(409).json({
+      message: "email already verified",
+    });
+  }
+
+  const verifyEmailToken = jwt.sign(
+    { id: user._id, email: user.email },
+    process.env.JWT_SECRET,
+  );
+  try {
+    await sendEnmail({
+      to: email,
+      subject: "welcome to perplexity",
+      html: `<p>Hi ${user.username},</p>
+        <p>thank you for registering to perplexity</p> 
+        <a href=${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyEmailToken}>click here to verify email</a>
+        <p>Best regards <br> the perplexity team</p>`,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      message: "error sending email",
+    });
+  }
+  res.status(200).json({
+    message: "email sent succesfully",
+    user: user.email,
+  });
 }
 
 export async function loginUser(req, res) {

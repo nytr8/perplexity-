@@ -3,6 +3,7 @@ import {
   getUser,
   loginUser,
   registerUser,
+  resendVerifyEmail,
   verifyEmail,
 } from "../controllers/auth.controller.js";
 import { validateLogin, validateRegister } from "../validation/auth.js";
@@ -13,6 +14,7 @@ const authRouter = express.Router();
 // POST /auth/register
 // validation runs first; controller runs only if request passes
 authRouter.post("/register", validateRegister, registerUser);
+authRouter.post("/resend-verification", resendVerifyEmail);
 authRouter.get("/verify-email", verifyEmail);
 authRouter.get("/login", validateLogin, loginUser);
 authRouter.get("/getme", authUser, getUser);
