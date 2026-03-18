@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import { useSelector } from "react-redux";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const { loading } = useSelector((state) => state.auth);
   const { handleLogin } = useAuth();
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,6 +21,10 @@ const Login = () => {
     navigate("/");
     setForm({ email: "", password: "" });
   };
+
+  if (!loading && user) {
+    return <Navigate to={"/"} replace />;
+  }
 
   return (
     <div className="mx-auto mt-12 w-full max-w-md rounded-lg border border-gray-700 bg-slate-900 p-6 shadow-lg shadow-black/40">
