@@ -120,7 +120,7 @@ export async function resendVerifyEmail(req, res) {
 }
 
 export async function loginUser(req, res) {
-  const { email } = req.body;
+  const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) {

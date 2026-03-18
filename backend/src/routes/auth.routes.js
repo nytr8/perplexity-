@@ -15,8 +15,8 @@ const authRouter = express.Router();
 // validation runs first; controller runs only if request passes
 authRouter.post("/register", validateRegister, registerUser);
 authRouter.post("/resend-verification", resendVerifyEmail);
+authRouter.post("/login", validateLogin, loginUser);
 authRouter.get("/verify-email", verifyEmail);
-authRouter.get("/login", validateLogin, loginUser);
 authRouter.get("/getme", authUser, getUser);
 
 export default authRouter;
