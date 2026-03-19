@@ -1,119 +1,60 @@
-import readline from "readline";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { tool } from "@langchain/core/tools";
-import { z } from "zod";
-import { sendEnmail } from "./mail.service.js";
-import { TavilySearch } from "@langchain/tavily";
-import { HumanMessage, ToolMessage } from "langchain";
+// import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-//mail service so ai can send emails
-export const sendEmailTool = tool(
-  async ({ to, subject, message }) => {
-    try {
-      await sendEnmail({
-        to,
-        subject,
-        text: message,
-        html: `<p>${message}</p>`,
-      });
+import { HumanMessage, SystemMessage, AIMessage } from "langchain";
 
-      return `Email sent successfully to ${to}`;
-    } catch (error) {
-      return `Email sending failed: ${error.message}`;
-    }
-  },
-  {
-    name: "send_email",
-    description:
-      "Send an email to a recipient. Use this tool when the user asks to send an email.",
-    schema: z.object({
-      to: z.string().describe("Recipient email address"),
-      subject: z.string().describe("Email subject"),
-      message: z.string().describe("Email body content"),
-    }),
-  },
-);
-
-//tavily so ai can search the web
-export const tavilyTool = new TavilySearch({
-  apiKey: process.env.TAVILY_API_KEY,
-  maxResults: 5,
+// const model = new ChatGoogleGenerativeAI({
+//   model: "gemini-2.5-flash-lite",
+//   apiKey: process.env.GEMINI_API_KEY,
+// });
+const model = new ChatMistralAI({
+  apiKey: process.env.MISTRAL_API_KEY,
+  model: "mistral-small-latest",
+});
+const titleModel = new ChatMistralAI({
+  apiKey: process.env.MISTRAL_API_KEY,
+  model: "mistral-small-latest",
 });
 
-export async function interactiveChat() {
-  const llm = new ChatMistralAI({
-    apiKey: process.env.MISTRAL_API_KEY,
-    model: "mistral-large-latest",
-  }).bindTools([sendEmailTool, tavilyTool]);
-
-  const messageMemory = [];
-  const tools = {
-    sendEmail: sendEmailTool,
-    tavily_search: tavilyTool,
-  };
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: true,
-  });
-
-  function askQuestion(promptText) {
-    return new Promise((resolve) => {
-      rl.question(promptText, resolve);
-    });
+export async function generateResponse(messages) {
+  if (!messages || messages.length === 0) {
+    throw new Error("Messages array is empty");
   }
 
-  console.log("AI chat started. Type 'exit' to quit.");
+  const formattedMessages = messages
+    .map((msg) => {
+      if (msg.role === "user") return new HumanMessage(msg.content);
+      if (msg.role === "ai") return new AIMessage(msg.content);
+      return null;
+    })
+    .filter(Boolean);
 
-  while (true) {
-    const userInput = (await askQuestion("You: ")).trim();
-
-    if (!userInput) continue;
-    if (userInput.toLowerCase() === "exit") break;
-
-    messageMemory.push(new HumanMessage(userInput));
-
-    try {
-      const aiResponse = await llm.invoke(messageMemory);
-
-      // Check if AI wants to call a tool
-
-      if (aiResponse.tool_calls?.length) {
-        messageMemory.push(aiResponse);
-        for (const toolCall of aiResponse.tool_calls) {
-          console.log("Tool requested:", toolCall.name);
-
-          const selectedTool = tools[toolCall.name];
-
-          if (!selectedTool) {
-            console.log("Tool not found:", toolCall.name);
-            continue;
-          }
-
-          const result = await selectedTool.invoke(toolCall.args);
-
-          messageMemory.push(
-            new ToolMessage({
-              tool_call_id: toolCall.id,
-              content: JSON.stringify(result),
-            }),
-          );
-        }
-
-        const finalResponse = await llm.invoke(messageMemory);
-
-        console.log("AI:", finalResponse.content);
-        messageMemory.push(finalResponse);
-      } else {
-        console.log("AI:", aiResponse.content);
-        messageMemory.push(aiResponse);
-      }
-    } catch (err) {
-      console.error("AI request failed:", err);
-    }
+  if (formattedMessages.length === 0) {
+    throw new Error("No valid messages");
   }
 
-  rl.close();
-  console.log("Chat ended.");
+  const response = await model.invoke(formattedMessages);
+
+  return response.content;
+}
+export async function generateTitle(message) {
+  try {
+    const response = await titleModel.invoke([
+      new SystemMessage(
+        "You generate short, concise titles (max 2 to 4 words) from user messages. Do not include quotes or extra text.",
+      ),
+      new HumanMessage(message),
+    ]);
+
+    // Clean the output
+    let title = response.content.trim();
+
+    // Optional: remove quotes if model adds them
+    title = title.replace(/^["']|["']$/g, "");
+
+    return title;
+  } catch (error) {
+    console.error("Title generation error:", error);
+    return "New Chat";
+  }
 }
