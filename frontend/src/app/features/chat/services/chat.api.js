@@ -1,29 +1,32 @@
 import axios from "axios";
 
-const api = axios.create({
+const app = axios.create({
   baseURL: "http://localhost:3000",
   withCredentials: true,
 });
 
 export const sendMessage = async ({ message, chatId }) => {
-  const res = api.post("/api/chats/message", {
+  const res = await app.post("/api/chats/message", {
     message,
     chatId,
   });
   return res.data;
 };
 
-export const getChats = async ({ message, chatId }) => {
-  const res = api.get("/api/chats/");
+export const getChats = async () => {
+  const res = await app.get("/api/chats/");
   return res.data;
 };
 
-export const getMessages = async ({ chatId }) => {
-  const res = api.get(`/api/chats/:${chatId}/messages`);
+export const getMessages = async (chatId) => {
+  if (!chatId) {
+    throw new Error("chatId is required to fetch messages");
+  }
+  const res = await app.get(`/api/chats/${chatId}/messages`);
   return res.data;
 };
 
 export const deleteChat = async ({ chatId }) => {
-  const res = api.delete(`/api/chats/delete/:${chatId}`);
+  const res = await app.delete(`/api/chats/delete/:${chatId}`);
   return res.data;
 };
