@@ -21,6 +21,7 @@ const Dashboard = () => {
   const chat = useChat();
   const [chatInput, setChatInput] = useState("");
   const chats = useSelector((state) => state.chat.chats);
+  const loading = useSelector((state) => state.chat.isLoading);
   const currentChatId = useSelector((state) => state.chat.currentChatId);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-2 px-2 mb-8 mt-1">
           <Sparkles className="w-5 h-5 text-blue-400" />
           <span className="text-lg font-bold text-white tracking-wide">
-            SYNTH <span className="text-blue-500">AI</span>
+            PERPLEXITY <span className="text-blue-500">AI</span>
           </span>
           <div className="ml-auto">
             <Sparkles className="w-4 h-4 text-gray-600" />
@@ -71,7 +72,7 @@ const Dashboard = () => {
 
           <div>
             <h3 className="text-xs font-semibold text-gray-400 px-2 mb-3">
-              Today's History
+              Chat History
             </h3>
             <div className="space-y-0.5">
               {Object.values(chats).map((chat, index) => {
@@ -147,40 +148,14 @@ const Dashboard = () => {
         <header className="h-[76px] flex-shrink-0 flex items-center justify-between px-8 border-b border-white/5 relative z-10 w-full">
           <div className="flex flex-col justify-center">
             <h1 className="text-[17px] font-semibold text-gray-100 leading-tight">
-              Chat with Synth (GPT-4o)
+              Chat with PERPLEXITY
             </h1>
-            <div className="flex items-center gap-1.5 text-[13px] text-gray-400 mt-0.5">
-              <span>Model:</span>
-              <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                Balanced
-              </button>
-              <span className="text-gray-600">|</span>
-              <button className="hover:text-gray-200 transition-colors">
-                Precise
-              </button>
-              <span className="text-gray-600">|</span>
-              <button className="hover:text-gray-200 transition-colors">
-                Creative
-              </button>
-            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-blue-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="bg-[#131825] border border-white/5 rounded-full pl-9 pr-4 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-white/10 focus:ring-1 focus:ring-white/10 w-48 focus:w-64 transition-all"
-              />
-            </div>
             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#131825] hover:bg-white/10 border border-white/5 rounded-lg text-sm font-medium text-gray-300 transition-colors shadow-sm">
               <Share className="w-4 h-4" />
               Share
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#131825] hover:bg-white/10 border border-white/5 rounded-lg text-sm font-medium text-gray-300 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />
-              New
             </button>
           </div>
         </header>
@@ -237,24 +212,28 @@ const Dashboard = () => {
             })}
 
             {/* Typing Indicator */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#131825] to-[#1A2235] border border-white/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-blue-400" />
+            {loading ? (
+              <div className="flex gap-4">
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#131825] to-[#1A2235] border border-white/10 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <span className="text-[10px] text-gray-400">Synth</span>
                 </div>
-                <span className="text-[10px] text-gray-400">Synth</span>
-              </div>
-              <div className="bg-[#131825]/60 backdrop-blur-md border border-white/5 rounded-full px-4 py-2 flex items-center gap-2 w-fit shadow-sm mt-1">
-                <span className="text-xs text-gray-400 font-medium">
-                  Typing...
-                </span>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full animate-[bounce_1s_infinite_0ms]"></div>
-                  <div className="w-1.5 h-1.5 bg-[#2563EB]/70 rounded-full animate-[bounce_1s_infinite_150ms]"></div>
-                  <div className="w-1.5 h-1.5 bg-[#2563EB]/40 rounded-full animate-[bounce_1s_infinite_300ms]"></div>
+                <div className="bg-[#131825]/60 backdrop-blur-md border border-white/5 rounded-full px-4 py-2 flex items-center gap-2 w-fit shadow-sm mt-1">
+                  <span className="text-xs text-gray-400 font-medium">
+                    Typing...
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full animate-[bounce_1s_infinite_0ms]"></div>
+                    <div className="w-1.5 h-1.5 bg-[#2563EB]/70 rounded-full animate-[bounce_1s_infinite_150ms]"></div>
+                    <div className="w-1.5 h-1.5 bg-[#2563EB]/40 rounded-full animate-[bounce_1s_infinite_300ms]"></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              ""
+            )}
           </div>
         </div>
 
@@ -290,10 +269,6 @@ const Dashboard = () => {
                   </button>
                 </div>
               </div>
-            </div>
-
-            <div className="text-center mt-3 text-xs text-gray-500 font-medium">
-              Synthesizing information... (Powered by GPT-4o)
             </div>
           </div>
         </div>

@@ -43,6 +43,7 @@ export const useChat = () => {
       }),
     );
     dispatch(setCurrentChatId(chat._id));
+    dispatch(setLoading(false));
   }
   async function handleGetChats() {
     dispatch(setLoading(true));
@@ -64,8 +65,6 @@ export const useChat = () => {
     dispatch(setLoading(false));
   }
   async function handleOpenChat(chatId, chats) {
-    console.log(chats[chatId]?.messages.length);
-
     if (chats[chatId]?.messages.length === 0) {
       const data = await getMessages(chatId);
       const { messages } = data;
