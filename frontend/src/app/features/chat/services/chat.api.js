@@ -27,6 +27,6 @@ export const getMessages = async (chatId) => {
 };
 
 export const deleteChat = async ({ chatId }) => {
-  const res = await app.delete(`/api/chats/delete/:${chatId}`);
+  const res = await app.delete(`/api/chats/delete/${chatId}`);
   return res.data;
 };

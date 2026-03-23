@@ -1,12 +1,15 @@
 import { ChatMistralAI } from "@langchain/mistralai";
-// import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-
+import { tavily } from "@tavily/core";
 import { HumanMessage, SystemMessage, AIMessage } from "langchain";
 
+// import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 // const model = new ChatGoogleGenerativeAI({
 //   model: "gemini-2.5-flash-lite",
 //   apiKey: process.env.GEMINI_API_KEY,
 // });
+
+const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
+
 const model = new ChatMistralAI({
   apiKey: process.env.MISTRAL_API_KEY,
   model: "mistral-small-latest",
@@ -21,17 +24,48 @@ export async function generateResponse(messages) {
     throw new Error("Messages array is empty");
   }
 
-  const formattedMessages = messages
-    .map((msg) => {
-      if (msg.role === "user") return new HumanMessage(msg.content);
-      if (msg.role === "ai") return new AIMessage(msg.content);
-      return null;
-    })
-    .filter(Boolean);
+  const latestMessage = messages[messages.length - 1];
 
-  if (formattedMessages.length === 0) {
-    throw new Error("No valid messages");
+  if (latestMessage.role !== "user") {
+    throw new Error("Last message must be from user");
   }
+
+  const userQuery = latestMessage.content;
+
+  let searchResults = "";
+  try {
+    const searchResponse = await tvly.search(userQuery);
+
+    searchResults = searchResponse?.results
+      ?.map((r, i) => `(${i + 1}) ${r.title}: ${r.content}`)
+      .join("\n");
+  } catch (err) {
+    console.error("Tavily error:", err);
+  }
+
+  const systemPrompt = `
+You are an AI assistant with access to real-time web search.
+
+Use the following search results to answer the user's question:
+
+${searchResults}
+
+Instructions:
+- Give accurate answers
+- Use search results when relevant
+- If not useful, answer normally
+`;
+
+  const formattedMessages = [
+    new SystemMessage(systemPrompt), // inject search context
+    ...messages
+      .map((msg) => {
+        if (msg.role === "user") return new HumanMessage(msg.content);
+        if (msg.role === "ai") return new AIMessage(msg.content);
+        return null;
+      })
+      .filter(Boolean),
+  ];
 
   const response = await model.invoke(formattedMessages);
 
