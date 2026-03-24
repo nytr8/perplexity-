@@ -170,3 +170,10 @@ export async function getUser(req, res) {
 
   res.status(200).json({ message: "user fetched succesfully", user });
 }
+
+export async function logoutUser(req, res) {
+  res.clearCookie("token");
+  return res.status(200).json({
+    message: "logout successful",
+  });
+}

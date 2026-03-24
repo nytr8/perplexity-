@@ -5,10 +5,12 @@ const app = axios.create({
   withCredentials: true,
 });
 
-export const sendMessage = async ({ message, chatId }) => {
+export const sendMessage = async ({ message, chatId, socketId, requestId }) => {
   const res = await app.post("/api/chats/message", {
     message,
     chat: chatId,
+    socketId,
+    requestId,
   });
   return res.data;
 };

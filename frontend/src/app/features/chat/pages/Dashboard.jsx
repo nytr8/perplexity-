@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat.js";
 import ReactMarkdown from "react-markdown";
+import useAuth from "../../auth/hooks/useAuth.js";
 import { useLocation, useNavigate } from "react-router-dom";
 import { setCurrentChatId } from "../chat.slice.js";
 import {
@@ -18,10 +19,12 @@ import {
   Camera,
   Mic,
   Send,
+  LogOut,
 } from "lucide-react";
 
 const Dashboard = () => {
   const chat = useChat();
+  const { handleLogout } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,8 +45,14 @@ const Dashboard = () => {
   const isDark = theme === "dark";
 
   useEffect(() => {
-    chat.initializeSocketConnection();
+    const cleanupSocket = chat.initializeSocketConnection();
     chat.handleGetChats();
+
+    return () => {
+      if (typeof cleanupSocket === "function") {
+        cleanupSocket();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -81,6 +90,9 @@ const Dashboard = () => {
   };
 
   const currentMessages = chats[currentChatId]?.messages || [];
+  const hasActiveStreamingMessage = currentMessages.some(
+    (message) => message.role === "ai" && message.isStreaming,
+  );
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
@@ -102,6 +114,11 @@ const Dashboard = () => {
       setChatInput("");
       navigate("/new-chat");
     }
+  };
+
+  const onLogout = async () => {
+    await handleLogout();
+    navigate("/login");
   };
 
   return (
@@ -284,6 +301,18 @@ const Dashboard = () => {
               {isDark ? "Light" : "Dark"}
             </button>
             <button
+              type="button"
+              onClick={onLogout}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm ${
+                isDark
+                  ? "bg-[#131825] hover:bg-red-500/10 border border-white/5 text-gray-300 hover:text-red-300"
+                  : "bg-white hover:bg-red-50 border border-slate-200 text-slate-700 hover:text-red-600"
+              }`}
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+            <button
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm ${
                 isDark
                   ? "bg-[#131825] hover:bg-white/10 border border-white/5 text-gray-300"
@@ -395,7 +424,7 @@ const Dashboard = () => {
             })}
 
             {/* Typing Indicator */}
-            {loading ? (
+            {loading && !hasActiveStreamingMessage ? (
               <div className="flex gap-4">
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div

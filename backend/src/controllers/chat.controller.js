@@ -1,42 +1,105 @@
 import chatModel from "../models/chat.js";
-import { generateResponse, generateTitle } from "../services/ai.service.js";
+import {
+  generateResponse,
+  generateResponseStream,
+  generateTitle,
+} from "../services/ai.service.js";
 import messageModel from "../models/message.js";
+import { getIO } from "../sockets/server.socket.js";
+
+function emitStreamEvent(socketId, eventName, payload) {
+  if (!socketId) {
+    return;
+  }
+
+  try {
+    getIO().to(socketId).emit(eventName, payload);
+  } catch (error) {
+    console.error(`Socket emit failed for ${eventName}:`, error);
+  }
+}
 
 export async function sendMessage(req, res) {
-  const { message, chat: chatId } = req.body;
+  const { message, chat: chatId, socketId, requestId } = req.body;
 
-  let chat = null,
-    title = null;
+  let currentChatId = chatId;
 
-  if (!chatId) {
-    title = await generateTitle(message);
-    chat = await chatModel.create({
-      user: req.user.id,
-      title: title,
+  try {
+    let chat = null,
+      title = null;
+
+    if (!chatId) {
+      title = await generateTitle(message);
+      chat = await chatModel.create({
+        user: req.user.id,
+        title: title,
+      });
+    }
+    currentChatId = chatId || chat._id;
+
+    const userMessage = await messageModel.create({
+      chat: currentChatId,
+      content: message,
+      role: "user",
+    });
+
+    emitStreamEvent(socketId, "chat:stream:start", {
+      requestId,
+      chatId: currentChatId,
+      title: title || chat?.title,
+      userMessage: {
+        id: userMessage._id?.toString(),
+        content: userMessage.content,
+        role: userMessage.role,
+      },
+    });
+
+    const messages = await messageModel.find({ chat: currentChatId });
+
+    const result = socketId
+      ? await generateResponseStream(messages, (delta) => {
+          emitStreamEvent(socketId, "chat:stream:delta", {
+            requestId,
+            chatId: currentChatId,
+            delta,
+          });
+        })
+      : await generateResponse(messages);
+
+    const aiMessage = await messageModel.create({
+      chat: currentChatId,
+      content: result,
+      role: "ai",
+    });
+
+    emitStreamEvent(socketId, "chat:stream:end", {
+      requestId,
+      chatId: currentChatId,
+      aiMessage: {
+        id: aiMessage._id?.toString(),
+        content: aiMessage.content,
+        role: aiMessage.role,
+      },
+    });
+
+    res.status(201).json({
+      title,
+      chat,
+      requestId,
+      userMessage,
+      aiMessage,
+    });
+  } catch (error) {
+    emitStreamEvent(socketId, "chat:stream:error", {
+      requestId,
+      chatId: currentChatId,
+      message: "Failed to generate AI response.",
+    });
+
+    return res.status(500).json({
+      message: error?.message || "Failed to send message.",
     });
   }
-  const currentChatId = chatId || chat._id;
-
-  const userMessage = await messageModel.create({
-    chat: currentChatId,
-    content: message,
-    role: "user",
-  });
-
-  const messages = await messageModel.find({ chat: currentChatId });
-  const result = await generateResponse(messages);
-
-  const aiMessage = await messageModel.create({
-    chat: currentChatId,
-    content: result,
-    role: "ai",
-  });
-  res.status(201).json({
-    title,
-    chat,
-    userMessage,
-    aiMessage,
-  });
 }
 
 export async function getChats(req, res) {

@@ -19,7 +19,58 @@ const titleModel = new ChatMistralAI({
   model: "mistral-small-latest",
 });
 
-export async function generateResponse(messages) {
+function formatMessagesWithSearchContext(messages, searchResults) {
+  const systemPrompt = `
+You are an AI assistant with access to real-time web search.
+
+Use the following search results to answer the user's question:
+
+${searchResults}
+
+Instructions:
+- Give accurate answers
+- Use search results when relevant
+- If not useful, answer normally
+`;
+
+  return [
+    new SystemMessage(systemPrompt),
+    ...messages
+      .map((msg) => {
+        if (msg.role === "user") return new HumanMessage(msg.content);
+        if (msg.role === "ai") return new AIMessage(msg.content);
+        return null;
+      })
+      .filter(Boolean),
+  ];
+}
+
+function normalizeChunkContent(content) {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  return content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+      if (typeof part?.text === "string") {
+        return part.text;
+      }
+      if (typeof part?.content === "string") {
+        return part.content;
+      }
+      return "";
+    })
+    .join("");
+}
+
+export async function generateResponseStream(messages, onToken) {
   if (!messages || messages.length === 0) {
     throw new Error("Messages array is empty");
   }
@@ -43,33 +94,41 @@ export async function generateResponse(messages) {
     console.error("Tavily error:", err);
   }
 
-  const systemPrompt = `
-You are an AI assistant with access to real-time web search.
+  const formattedMessages = formatMessagesWithSearchContext(
+    messages,
+    searchResults,
+  );
 
-Use the following search results to answer the user's question:
+  let fullText = "";
+  const stream = await model.stream(formattedMessages);
 
-${searchResults}
+  for await (const chunk of stream) {
+    const delta = normalizeChunkContent(chunk?.content);
+    if (!delta) {
+      continue;
+    }
 
-Instructions:
-- Give accurate answers
-- Use search results when relevant
-- If not useful, answer normally
-`;
+    fullText += delta;
 
-  const formattedMessages = [
-    new SystemMessage(systemPrompt), // inject search context
-    ...messages
-      .map((msg) => {
-        if (msg.role === "user") return new HumanMessage(msg.content);
-        if (msg.role === "ai") return new AIMessage(msg.content);
-        return null;
-      })
-      .filter(Boolean),
-  ];
+    if (onToken) {
+      await onToken(delta);
+    }
+  }
 
-  const response = await model.invoke(formattedMessages);
+  if (!fullText) {
+    const fallbackResponse = await model.invoke(formattedMessages);
+    fullText = normalizeChunkContent(fallbackResponse?.content);
 
-  return response.content;
+    if (onToken && fullText) {
+      await onToken(fullText);
+    }
+  }
+
+  return fullText;
+}
+
+export async function generateResponse(messages) {
+  return generateResponseStream(messages);
 }
 export async function generateTitle(message) {
   try {
