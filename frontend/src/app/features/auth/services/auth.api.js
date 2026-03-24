@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const app = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "https://perplexity-clone-q32m.onrender.com/",
   withCredentials: true,
 });
 
