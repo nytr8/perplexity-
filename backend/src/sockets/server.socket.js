@@ -1,12 +1,11 @@
 import { Server } from "socket.io";
 
-
 let io;
 
 export function initSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: "https://perplexity-ashy-chi.vercel.app",
       credentials: true,
     },
   });
