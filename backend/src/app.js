@@ -13,7 +13,7 @@ app.use(cookieParser());
 app.use(express.static("./public"));
 app.use(
   cors({
-    origin: "https://perplexity-ashy-chi.vercel.app",
+    origin: "https://perplexity-useo.onrender.com",
     credentials: true,
   }),
 );
