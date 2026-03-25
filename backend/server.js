@@ -7,6 +7,6 @@ const httpServer = http.createServer(app);
 connectDB();
 initSocket(httpServer);
 
-httpServer.listen("https://perplexity-clone-q32m.onrender.com", () => {
+httpServer.listen(3000, () => {
   console.log("server running in port 3000");
 });
