@@ -7,7 +7,7 @@ export const initializeSocketConnection = () => {
     return socketInstance;
   }
 
-  socketInstance = io("https://perplexity-4l7q.onrender.com", {
+  socketInstance = io("https://perplexity-useo.onrender.com", {
     withCredentials: true,
   });
 
