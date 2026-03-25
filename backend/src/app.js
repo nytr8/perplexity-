@@ -10,6 +10,7 @@ const app = express();
 // built-in middleware for parsing JSON bodies
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static("./public"));
 app.use(
   cors({
     origin: "https://perplexity-ashy-chi.vercel.app",
@@ -22,5 +23,9 @@ app.use(morgan("dev"));
 app.use("/api/auth", authRouter);
 // chat endpoints
 app.use("/api/chats", chatRouter);
+
+app.use("*", (req, res) => {
+  res.sendFile(Path2D.join(__dirname, "..", "/public/index.html"));
+});
 
 export default app;
