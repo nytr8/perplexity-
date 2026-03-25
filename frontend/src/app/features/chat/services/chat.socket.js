@@ -7,7 +7,7 @@ export const initializeSocketConnection = () => {
     return socketInstance;
   }
 
-  socketInstance = io("http://localhost:3000", {
+  socketInstance = io("https://perplexity-clone-q32m.onrender.com", {
     withCredentials: true,
   });
 
