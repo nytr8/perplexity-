@@ -24,7 +24,7 @@ app.use("/api/auth", authRouter);
 // chat endpoints
 app.use("/api/chats", chatRouter);
 
-app.use("*", (req, res) => {
+app.use("*name", (req, res) => {
   res.sendFile(Path2D.join(__dirname, "..", "/public/index.html"));
 });
 
