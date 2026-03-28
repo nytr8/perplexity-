@@ -24,7 +24,7 @@ export async function registerUser(req, res) {
       subject: "welcome to perplexity",
       html: `<p>Hi ${username},</p>
       <p>thank you fo rregistering to perplexity</p> 
-      <a href=${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyEmailToken}>click here to verify email</a>
+      <a href=https://perplexity-xkeb.onrender.com/api/auth/verify-email?token=${verifyEmailToken}>click here to verify email</a>
       <p>Best regards <br> the perplexity team</p>`,
     });
     // avoid returning sensitive info
@@ -105,7 +105,7 @@ export async function resendVerifyEmail(req, res) {
       subject: "welcome to perplexity",
       html: `<p>Hi ${user.username},</p>
         <p>thank you for registering to perplexity</p> 
-        <a href=${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyEmailToken}>click here to verify email</a>
+        <a href=https://perplexity-xkeb.onrender.com/api/auth/verify-email?token=${verifyEmailToken}>click here to verify email</a>
         <p>Best regards <br> the perplexity team</p>`,
     });
   } catch (error) {
