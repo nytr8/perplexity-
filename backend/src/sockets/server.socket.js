@@ -5,7 +5,7 @@ let io;
 export function initSocket(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: "https://perplexity-useo.onrender.com",
+      origin: "https://perplexity-xkeb.onrender.com",
       credentials: true,
     },
   });
