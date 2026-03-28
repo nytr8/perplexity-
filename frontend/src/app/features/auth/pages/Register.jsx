@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { use, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
@@ -8,14 +8,15 @@ const Register = () => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Register payload", form);
-    // TODO: call auth API for register
-    alert(`Register submit:\nusername=${form.username}\nemail=${form.email}`);
+    await handleRegister(form);
+    setForm({ username: "", email: "", password: "" });
+    navigate("/login");
   };
-
+  
   return (
     <div className="mx-auto mt-12 w-full max-w-md rounded-lg border border-gray-700 bg-slate-900 p-6 shadow-lg shadow-black/40">
       <h2 className="mb-6 text-2xl font-semibold text-white">Register</h2>
